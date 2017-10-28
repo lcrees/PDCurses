@@ -55,7 +55,7 @@ when defined(windows):
 else:
   const
     unixOS = true
-    pdcursesdll = "" 
+    pdcursesdll = "libpdcurses.a" 
 
   {.pragma: cdecl.}
 
@@ -1134,7 +1134,7 @@ template getyx*(w, y, x: untyped): untyped =
   y = getcury(w)
   x = getcurx(w)
 
-template getsyx*(y, x: untyped): stmt =
+template getsyx*(y, x: untyped): typed =
   if curscr.leaveit:
     (x) = - 1
     (y) = (x)
