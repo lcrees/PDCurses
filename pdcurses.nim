@@ -13,7 +13,7 @@ discard """
 
 curses.h:
 #ifdef C2NIM
-#dynlib pdcursesdll
+#dynlib PDCURSED
 #skipinclude
 #prefix PDC_
 #def FALSE
@@ -31,7 +31,7 @@ curses.h:
 
 pdcwin.h:
 #ifdef C2NIM
-#dynlib pdcursesdll
+#dynlib PDCURSED
 #skipinclude
 #prefix pdc_
 #prefix PDC_
@@ -40,14 +40,14 @@ pdcwin.h:
 """
 
 when defined(windows):
-  import windows
+  import oldwinapi
 
   when defined(nimOldDlls):
-    const pdcursesdll = "pdcurses.dll"
+    const PDCURSED = "pdcurses.dll"
   elif defined(cpu64):
-    const pdcursesdll = "pdcurses64.dll"
+    const PDCURSED = "pdcurses64.dll"
   else:
-    const pdcursesdll = "pdcurses32.dll"
+    const PDCURSED = "pdcurses32.dll"
 
   const unixOS = false
   {.pragma: stdcall.}
@@ -55,7 +55,7 @@ when defined(windows):
 else:
   const
     unixOS = true
-    pdcursesdll = "libpdcurses.a" 
+    PDCURSED = "libpdcurses.a"
 
   {.pragma: cdecl.}
 
@@ -665,7 +665,7 @@ discard """WACS_ULCORNER* = (addr((acs_map['l'])))
   WACS_SBSB* = WACS_VLINE
   WACS_SSSS* = WACS_PLUS"""
 
-{.push dynlib: pdcursesdll.}
+{.push dynlib: PDCURSED.}
 
 proc add_wch*(a2: ptr cunsignedlong): cint {.importc: "add_wch".}
 proc add_wchnstr*(a2: ptr cunsignedlong; a3: cint): cint {.importc: "add_wchnstr".}
