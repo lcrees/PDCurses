@@ -40,7 +40,7 @@ pdcwin.h:
 """
 
 when defined(windows):
-  import oldwinapi
+  import oldwinapi.shellapi
 
   when defined(nimOldDlls):
     const PDCURSED = "pdcurses.dll"
@@ -1144,12 +1144,6 @@ template getmouse*(x: untyped): untyped =
   nc_getmouse(x)
 
 when defined(windows):
-  var
-    atrtab* {.importc: "pdc_atrtab".}: cstring
-    con_in* {.importc: "pdc_con_in".}: HANDLE
-    con_out* {.importc: "pdc_con_out".}: HANDLE
-    quick_edit* {.importc: "pdc_quick_edit".}: DWORD
-
   proc get_buffer_rows*(): cint {.importc: "PDC_get_buffer_rows".}
 
 {.pop.}
