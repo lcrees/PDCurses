@@ -5,77 +5,40 @@
 #
 #    See the file "copying.txt", included in this
 #    distribution, for details about the copyright.
-#
 
 {.deadCodeElim: on.}
 
-discard """
-
-curses.h:
-#ifdef C2NIM
-#dynlib PDCURSED
-#skipinclude
-#prefix PDC_
-#def FALSE
-#def TRUE
-#def NULL
-#def bool unsigned char
-#def chtype unsigned long
-#def cchar_t unsigned long
-#def attr_t unsigned long
-#def mmask_t unsigned long
-#def wchar_t char
-#def PDCEX
-#cdecl
-#endif
-
-pdcwin.h:
-#ifdef C2NIM
-#dynlib PDCURSED
-#skipinclude
-#prefix pdc_
-#prefix PDC_
-#stdcall
-#endif
-"""
-
 when defined(windows):
-  import oldwinapi.shellapi
-
-  when defined(nimOldDlls):
-    const PDCURSED = "pdcurses.dll"
-  elif defined(cpu64):
-    const PDCURSED = "pdcurses64.dll"
-  else:
-    const PDCURSED = "pdcurses32.dll"
-
-  const unixOS = false
-  {.pragma: stdcall.}
-
+  const
+    unixOS = false
+    PDCURSED = "pdcurses.dll"
+  
+  {.push callConv:stdcall, dynlib: PDCURSED.}
+  
 else:
   const
     unixOS = true
     PDCURSED = "libpdcurses.a"
-
-  {.pragma: cdecl.}
+  
+  {.push callConv:cdecl, dynlib: PDCURSED.}
 
 type
-  cunsignedchar = char
+  cunsignedchar = uint8
   cunsignedlong = uint32
 
-  TMOUSE_STATUS* {.pure, final.} = object
+  TMOUSE_STATUS* {.bycopy, pure, final.} = object
     x*: cint                  # absolute column, 0 based, measured in characters
     y*: cint                  # absolute row, 0 based, measured in characters
     button*: array[0..3 - 1, cshort] # state of each button
     changes*: cint            # flags indicating what has changed with the mouse
 
-  MEVENT* {.pure, final.} = object
+  MEVENT* {.bycopy, pure, final.} = object
     id*: cshort               # unused, always 0
     x*, y*, z*: cint                  # x, y same as TMOUSE_STATUS; z unused
     bstate*: cunsignedlong    # equivalent to changes + button[], but
                               # in the same format as used for mousemask()
 
-  WINDOW* {.pure, final.} = object
+  WINDOW* {.bycopy, pure, final.} = object
     cury*: cint              # current pseudo-cursor
     curx*: cint
     maxy*: cint              # max window coordinates
@@ -102,11 +65,11 @@ type
     pary*: cint              # coords relative to parent (0,0)
     parent*: ptr WINDOW        # subwin's pointer to parent win
 
-  PANELOBS* {.pure, final.} = object
+  PANELOBS* {.bycopy, pure, final.} = object
     above*: ptr PANELOBS
     pan*: ptr PANEL
 
-  PANEL* {.pure, final.} = object
+  PANEL* {.bycopy, pure, final.} = object
     win*: ptr WINDOW
     wstarty*: cint
     wendy*: cint
@@ -119,7 +82,7 @@ type
 
 when unixOS:
   type
-    SCREEN* {.pure, final.} = object
+    SCREEN* {.bycopy, pure, final.} = object
       alive*: cunsignedchar     # if initscr() called, and not endwin()
       autocr*: cunsignedchar    # if cr -> lf
       cbreak*: cunsignedchar    # if terminal unbuffered
@@ -162,7 +125,7 @@ when unixOS:
       line_color*: cshort       # color of line attributes - default -1
 else:
   type
-    SCREEN* {.pure, final.} = object
+    SCREEN* {.bycopy, pure, final.} = object
       alive*: cunsignedchar     # if initscr() called, and not endwin()
       autocr*: cunsignedchar    # if cr -> lf
       cbreak*: cunsignedchar    # if terminal unbuffered
@@ -195,6 +158,36 @@ else:
       return_key_modifiers*: cunsignedchar # TRUE if modifier keys are returned as "real" keys
       key_code*: cunsignedchar # TRUE if last key is a special key;
       line_color*: cshort       # color of line attributes - default -1
+
+
+const PDC_RGB = false
+#[
+    Adjust the above constant according to how
+    the dynamic library was compiled!
+    
+    Below is the C code from "curses.h" that defines this constant.
+
+    #ifdef PDC_RGB        /* RGB */
+    # define COLOR_RED    1
+    # define COLOR_GREEN  2
+    # define COLOR_BLUE   4
+    #else                 /* BGR */
+    # define COLOR_BLUE   1
+    # define COLOR_GREEN  2
+    # define COLOR_RED    4
+    #endif
+]#
+
+when (PDC_RGB == true):
+  const
+    COLOR_RED* = 1
+    COLOR_GREEN* = 2
+    COLOR_BLUE* = 4
+else:
+  const
+    COLOR_RED* = 4
+    COLOR_GREEN* = 2
+    COLOR_BLUE* = 1
 
 const
   A_ALTCHARSET* = 0x00010000
@@ -342,9 +335,6 @@ const
   CLIP_MEMORY_ERROR* = 3
   CLIP_SUCCESS* = 0
   COLOR_BLACK* = 0
-  COLOR_BLUE* = 4
-  COLOR_GREEN* = 2
-  COLOR_RED* = 1
   COLOR_CYAN* = (COLOR_BLUE or COLOR_GREEN)
   COLOR_MAGENTA* = (COLOR_RED or COLOR_BLUE)
   COLOR_SHIFT* = 24
@@ -572,7 +562,7 @@ template ACS_PICK*(w, n: untyped): untyped = int32(w) or A_ALTCHARSET
 template KEY_F*(n: untyped): untyped = KEY_F0 + n
 
 template COLOR_PAIR*(n: untyped): untyped =
-  ((cunsignedlong(n) shl COLOR_SHIFT) and A_COLOR)
+   ((cunsignedlong(n) shl COLOR_SHIFT) and A_COLOR)
 
 template PAIR_NUMBER*(n: untyped): untyped =
   (((n) and A_COLOR) shr COLOR_SHIFT)
@@ -665,7 +655,7 @@ discard """WACS_ULCORNER* = (addr((acs_map['l'])))
   WACS_SBSB* = WACS_VLINE
   WACS_SSSS* = WACS_PLUS"""
 
-{.push dynlib: PDCURSED.}
+{.push discardable.}
 
 proc add_wch*(a2: ptr cunsignedlong): cint {.importc: "add_wch".}
 proc add_wchnstr*(a2: ptr cunsignedlong; a3: cint): cint {.importc: "add_wchnstr".}
@@ -1142,8 +1132,5 @@ template getsyx*(y, x: untyped): typed =
 
 template getmouse*(x: untyped): untyped =
   nc_getmouse(x)
-
-when defined(windows):
-  proc get_buffer_rows*(): cint {.importc: "PDC_get_buffer_rows".}
 
 {.pop.}
