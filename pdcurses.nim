@@ -18,7 +18,7 @@ when defined(windows):
 else:
   const
     unixOS = true
-    PDCURSED = "libpdcurses.a"
+    PDCURSED = "libpdcurses.so"
   
   {.push callConv:cdecl, dynlib: PDCURSED.}
 
@@ -562,7 +562,7 @@ template ACS_PICK*(w, n: untyped): untyped = int32(w) or A_ALTCHARSET
 template KEY_F*(n: untyped): untyped = KEY_F0 + n
 
 template COLOR_PAIR*(n: untyped): untyped =
-   ((cunsignedlong(n) shl COLOR_SHIFT) and A_COLOR)
+  ((cunsignedlong(n) shl COLOR_SHIFT) and A_COLOR)
 
 template PAIR_NUMBER*(n: untyped): untyped =
   (((n) and A_COLOR) shr COLOR_SHIFT)
